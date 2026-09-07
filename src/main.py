@@ -1,6 +1,7 @@
 import time
 
 import cv2
+import pyautogui
 
 from hand_tracker import HandTracker
 
@@ -15,9 +16,14 @@ def main():
 
     tracker = HandTracker()
 
+    # Get screen dimensions
+    screen_width, screen_height = pyautogui.size()
+
     start_time = time.time()
 
-    print("Virtual Mouse - Hand Tracking")
+    print("Virtual Mouse - Cursor Control")
+    print(f"Screen: {screen_width} x {screen_height}")
+    print("Move your index finger to control the cursor.")
     print("Press Q to quit.")
 
     while True:
@@ -28,10 +34,9 @@ def main():
             print("ERROR: Could not read webcam frame.")
             break
 
-        # Mirror the webcam
+        # Mirror webcam
         frame = cv2.flip(frame, 1)
 
-        # MediaPipe requires increasing timestamps
         timestamp_ms = int(
             (time.time() - start_time) * 1000
         )
@@ -46,29 +51,67 @@ def main():
             results
         )
 
-        # Display index fingertip
         if landmarks:
 
-            index_finger = landmarks[8]
+            # Index fingertip = landmark 8
+            _, x, y = landmarks[8]
 
-            _, x, y = index_finger
+            # Get camera dimensions
+            camera_height, camera_width, _ = frame.shape
 
+            # Map camera coordinates -> screen coordinates
+            screen_x = int(
+                x / camera_width * screen_width
+            )
+
+            screen_y = int(
+                y / camera_height * screen_height
+            )
+
+            # Move cursor
+            pyautogui.moveTo(
+                screen_x,
+                screen_y
+            )
+
+            # Display coordinates
             cv2.putText(
                 frame,
-                f"Index: ({x}, {y})",
+                f"Camera: ({x}, {y})",
                 (10, 40),
                 cv2.FONT_HERSHEY_SIMPLEX,
-                0.8,
+                0.7,
                 (0, 255, 0),
                 2
             )
 
+            cv2.putText(
+                frame,
+                f"Screen: ({screen_x}, {screen_y})",
+                (10, 70),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.7,
+                (0, 255, 0),
+                2
+            )
+
+        else:
+
+            cv2.putText(
+                frame,
+                "No hand detected",
+                (10, 40),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.8,
+                (0, 0, 255),
+                2
+            )
+
         cv2.imshow(
-            "Virtual Mouse - Hand Tracking",
+            "Virtual Mouse",
             frame
         )
 
-        # Q = quit
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
 
