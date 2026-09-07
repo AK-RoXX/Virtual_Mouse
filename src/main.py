@@ -16,14 +16,26 @@ def main():
 
     tracker = HandTracker()
 
-    # Get screen dimensions
     screen_width, screen_height = pyautogui.size()
+
+    # -----------------------------
+    # Cursor configuration
+    # -----------------------------
+
+    smoothening = 8
+
+    frame_margin = 100
+
+    # Ignore tiny movements
+    deadzone = 3
+
+    previous_x = 0
+    previous_y = 0
 
     start_time = time.time()
 
-    print("Virtual Mouse - Cursor Control")
-    print(f"Screen: {screen_width} x {screen_height}")
-    print("Move your index finger to control the cursor.")
+    print("VisionMouse")
+    print("Move index finger to control cursor.")
     print("Press Q to quit.")
 
     while True:
@@ -31,10 +43,8 @@ def main():
         success, frame = cap.read()
 
         if not success:
-            print("ERROR: Could not read webcam frame.")
             break
 
-        # Mirror webcam
         frame = cv2.flip(frame, 1)
 
         timestamp_ms = int(
@@ -51,46 +61,93 @@ def main():
             results
         )
 
+        camera_height, camera_width, _ = frame.shape
+
+        # Active region
+        cv2.rectangle(
+            frame,
+            (frame_margin, frame_margin),
+            (
+                camera_width - frame_margin,
+                camera_height - frame_margin
+            ),
+            (255, 0, 255),
+            2
+        )
+
         if landmarks:
 
-            # Index fingertip = landmark 8
+            # Index fingertip
             _, x, y = landmarks[8]
 
-            # Get camera dimensions
-            camera_height, camera_width, _ = frame.shape
-
-            # Map camera coordinates -> screen coordinates
-            screen_x = int(
-                x / camera_width * screen_width
+            # Clamp inside active region
+            x = max(
+                frame_margin,
+                min(camera_width - frame_margin, x)
             )
 
-            screen_y = int(
-                y / camera_height * screen_height
+            y = max(
+                frame_margin,
+                min(camera_height - frame_margin, y)
             )
 
-            # Move cursor
-            pyautogui.moveTo(
-                screen_x,
-                screen_y
+            # Camera → screen
+            target_x = int(
+                (x - frame_margin)
+                / (camera_width - 2 * frame_margin)
+                * screen_width
             )
 
-            # Display coordinates
+            target_y = int(
+                (y - frame_margin)
+                / (camera_height - 2 * frame_margin)
+                * screen_height
+            )
+
+            # --------------------------------
+            # Dead-zone to prevent drift
+            # --------------------------------
+
+            if (
+                abs(target_x - previous_x) > deadzone
+                or
+                abs(target_y - previous_y) > deadzone
+            ):
+
+                current_x = previous_x + (
+                    target_x - previous_x
+                ) / smoothening
+
+                current_y = previous_y + (
+                    target_y - previous_y
+                ) / smoothening
+
+                current_x = int(current_x)
+                current_y = int(current_y)
+
+                pyautogui.moveTo(
+                    current_x,
+                    current_y
+                )
+
+                previous_x = current_x
+                previous_y = current_y
+
+            # Fingertip indicator
+            cv2.circle(
+                frame,
+                (x, y),
+                10,
+                (255, 0, 255),
+                -1
+            )
+
             cv2.putText(
                 frame,
-                f"Camera: ({x}, {y})",
+                "Tracking",
                 (10, 40),
                 cv2.FONT_HERSHEY_SIMPLEX,
-                0.7,
-                (0, 255, 0),
-                2
-            )
-
-            cv2.putText(
-                frame,
-                f"Screen: ({screen_x}, {screen_y})",
-                (10, 70),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.7,
+                0.8,
                 (0, 255, 0),
                 2
             )
@@ -108,7 +165,7 @@ def main():
             )
 
         cv2.imshow(
-            "Virtual Mouse",
+            "VisionMouse",
             frame
         )
 
