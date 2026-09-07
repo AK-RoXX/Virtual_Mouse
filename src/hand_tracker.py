@@ -23,9 +23,7 @@ class HandTracker:
                 "Download hand_landmarker.task and place it in models/"
             )
 
-        base_options = python.BaseOptions(
-            model_asset_path=str(model_path)
-        )
+        base_options = python.BaseOptions(model_asset_path=str(model_path))
 
         options = vision.HandLandmarkerOptions(
             base_options=base_options,
@@ -35,22 +33,14 @@ class HandTracker:
             min_tracking_confidence=tracking_confidence,
         )
 
-        self.detector = vision.HandLandmarker.create_from_options(
-            options
-        )
+        self.detector = vision.HandLandmarker.create_from_options(options)
 
     def find_hands(self, frame, timestamp_ms):
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-        mp_image = mp.Image(
-            image_format=mp.ImageFormat.SRGB,
-            data=rgb
-        )
+        mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
 
-        results = self.detector.detect_for_video(
-            mp_image,
-            timestamp_ms
-        )
+        results = self.detector.detect_for_video(mp_image, timestamp_ms)
 
         return frame, results
 
@@ -69,16 +59,8 @@ class HandTracker:
             x = int(landmark.x * width)
             y = int(landmark.y * height)
 
-            landmarks.append(
-                (landmark_id, x, y)
-            )
+            landmarks.append((landmark_id, x, y))
 
-            cv2.circle(
-                frame,
-                (x, y),
-                5,
-                (0, 255, 0),
-                -1
-            )
+            cv2.circle(frame, (x, y), 5, (0, 255, 0), -1)
 
         return landmarks
