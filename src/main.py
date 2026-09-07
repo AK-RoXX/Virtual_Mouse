@@ -18,15 +18,15 @@ def main():
 
     screen_width, screen_height = pyautogui.size()
 
-    # -----------------------------
     # Cursor configuration
-    # -----------------------------
 
     smoothening = 8
 
     # click state
+    left_pinching = False
+    right_pinching = False
+
     previous_y = 0
-    pinching = False
     click_threshold = 35
 
     frame_margin = 100
@@ -88,9 +88,7 @@ def main():
                 (y - frame_margin) / (camera_height - 2 * frame_margin) * screen_height
             )
 
-            # --------------------------------
             # Dead-zone to prevent drift
-            # --------------------------------
 
             if (
                 abs(target_x - previous_x) > deadzone
@@ -122,22 +120,33 @@ def main():
                 2,
             )
 
-            # --------------------------------
-            # Left click detection
-            # --------------------------------
+            # Gesture detection
 
             _, thumb_x, thumb_y = landmarks[4]
             _, index_x, index_y = landmarks[8]
+            _, middle_x, middle_y = landmarks[12]
 
-            distance = math.hypot(index_x - thumb_x, index_y - thumb_y)
+            # Thumb ↔ Index
+            left_distance = math.hypot(index_x - thumb_x, index_y - thumb_y)
 
-            if distance < click_threshold:
+            # Thumb ↔ Middle
+            right_distance = math.hypot(middle_x - thumb_x, middle_y - thumb_y)
 
-                if not pinching:
+            # Draw gesture lines
+            cv2.line(frame, (thumb_x, thumb_y), (index_x, index_y), (255, 255, 0), 2)
+
+            cv2.line(frame, (thumb_x, thumb_y), (middle_x, middle_y), (255, 0, 255), 2)
+
+            # LEFT CLICK
+            # Thumb + Index
+
+            if left_distance < click_threshold:
+
+                if not left_pinching:
 
                     pyautogui.click()
 
-                    pinching = True
+                    left_pinching = True
 
                     cv2.putText(
                         frame,
@@ -148,11 +157,35 @@ def main():
                         (0, 255, 0),
                         2,
                     )
-                    cv2.line(
-                        frame, (thumb_x, thumb_y), (index_x, index_y), (255, 255, 0), 2
+
+            else:
+
+                left_pinching = False
+
+            # RIGHT CLICK
+            # Thumb + Middle
+
+            if right_distance < click_threshold:
+
+                if not right_pinching:
+
+                    pyautogui.rightClick()
+
+                    right_pinching = True
+
+                    cv2.putText(
+                        frame,
+                        "RIGHT CLICK",
+                        (10, 115),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.8,
+                        (0, 255, 0),
+                        2,
                     )
-                else:
-                    pinching = False
+
+            else:
+
+                right_pinching = False
 
         else:
 
