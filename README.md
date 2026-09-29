@@ -147,7 +147,7 @@ MediaPipe's hand landmark model used for real-time hand tracking.
 ## 1. Clone the repository
 
 ```bash
-git clone [<YOUR_GITHUB_REPOSITORY_URL>](https://github.com/AK-RoXX/Virtual_Mouse.git)
+git clone https://github.com/AK-RoXX/Virtual_Mouse.git
 cd VisionMouse
 ```
 
